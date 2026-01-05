@@ -6,99 +6,153 @@
 
 > **183 tests passing** | Core Engine 92 ✓ | Mobile App 30 ✓ | Firmware 61 ✓
 
-Repository scaffold for the Neural Load Ring project.
+**A closed-loop autonomic companion** — a calm, steady presence that helps you return to yourself.
 
-## Project Overview
+---
 
-🧠 **Neural Load Ring (NLR)**
+## What It Does
 
-A Closed‑Loop System for Upstream Neural Load Control
+A wearable ring that senses when your nervous system drifts out of balance and guides you back — gently, silently, before stress compounds. No screens to check. No decisions to make. Just a subtle haptic rhythm synced to your biology.
 
-💍 Form Factor
-- A ring (or slim wrist band) worn 24/7
-- Zero cognitive effort
-- No headgear, no meditation, no rituals
-- Designed to disappear into daily life
+### The Signature Feel System
 
-🔑 What Makes It Fundamentally New
-Most “brain tech” tries to read or stimulate the brain directly.
-The NLR does something more powerful: it never touches the brain — it controls the constraints the brain cannot escape.
+Most wearables show you data *after* the fact. NLR acts *in the moment*.
 
-Neural aging is not primarily a brain‑local process. It is driven by systemic timing, energy, and stress signals. Control those → neurons never enter failure regimes. This is the core insight.
+When your heart rate variability signals rising stress, the ring delivers a gentle vibration pattern timed to your exhalation window — the precise moment when your vagus nerve is most receptive. Your body learns to reset without conscious effort.
 
-🧩 Biological Principle
+**This isn't an alert. It's a return.**
+
+---
+
+## The Science
+
+### 🧠 Upstream Neural Load Control
+
+Most "brain tech" tries to read or stimulate the brain directly. NLR does something more powerful: **it never touches the brain** — it controls the constraints the brain cannot escape.
+
+Neural aging is not primarily a brain-local process. It is driven by systemic timing, energy, and stress signals. Control those → neurons never enter failure regimes.
+
+### 🧩 Biological Principle
+
 Neurons fail when the body forces them into chronic prediction debt. Prediction debt accumulates when the autonomic system becomes noisy or unstable:
+
 - Autonomic imbalance
 - Metabolic timing noise
-- Persistent micro‑stress signaling
+- Persistent micro-stress signaling
 
-You don’t “fix the brain.” You remove the pressure that ages it.
+You don't "fix the brain." You remove the pressure that ages it.
 
-🔧 What the Neural Load Ring Actually Does
-1. Measures Systemic Timing Noise
-	- Not heart rate.
-	- Not steps.
-	- Not sleep score.
-	- Tracks upstream neural load indicators: micro‑variability in HRV phase coherence, vascular tone oscillation patterns, circadian phase drift, stress recovery latency.
+### 🔧 How It Works
 
-2. Applies Autonomic Phase Correction
-	- The ring delivers ultra‑low‑power micro‑thermal pulses, precise mechanical micro‑vibrations, patterned cutaneous nerve timing cues.
-	- These do not stimulate the brain; they re‑phase autonomic signaling — correcting the clock, not pushing the engine.
+1. **Measures Systemic Timing Noise**
+   - Not heart rate. Not steps. Not sleep score.
+   - Tracks upstream neural load indicators: micro-variability in HRV phase coherence, vascular tone oscillation patterns, circadian phase drift, stress recovery latency.
 
-3. Enforces Mandatory Neural Rest (Without Awareness)
-	- When systemic load exceeds safe thresholds: sympathetic tone is subtly dampened, parasympathetic timing is reinforced, cortical demand quietly drops.
-	- The user feels nothing, does nothing, thinks nothing — yet neurons stop accumulating damage.
+2. **Applies Autonomic Phase Correction**
+   - Ultra-low-power micro-thermal pulses, precise mechanical micro-vibrations, patterned cutaneous nerve timing cues.
+   - These don't stimulate the brain — they re-phase autonomic signaling.
 
-🆚 Why This Is Different
-Existing wearables measure behavior and require user feedback loops or conscious effort. NLR is a closed‑loop, system‑direct approach that enforces preventive physiology with zero user effort.
+3. **Enforces Mandatory Neural Rest (Without Awareness)**
+   - When systemic load exceeds safe thresholds: sympathetic tone is subtly dampened, parasympathetic timing is reinforced.
+   - The user feels nothing, does nothing, thinks nothing — yet neurons stop accumulating damage.
 
-🌱 Why It Works (Biologically)
-If stress hormones normalize, vascular timing stabilizes, and energy delivery becomes predictable, neurons avoid excitotoxic and rigid states, plasticity remains open, and aging cascades never trigger.
+---
 
-👥 Mass Adoption Viability
-People will actually wear this because it looks like a normal ring, requires no cognitive effort, no belief system, and has no “biohacking” stigma — invisible nervous system insurance.
+## Why It's Different
 
-📉 Effectiveness (Conservative Estimates)
-- Delay of cognitive aging slope: 30–50% slower decline
-- Reduction of stress‑induced neural damage: 60–70%
-- Risk reduction for degeneration cascades: 25–40%
+| Existing Wearables | Neural Load Ring |
+|-------------------|------------------|
+| Measure behavior | Measure autonomic state |
+| Require user feedback | Zero cognitive effort |
+| Show data after stress | Intervene *during* stress |
+| Conscious effort needed | Works without awareness |
 
-🧠 Percentage‑Wise Benefits (selected domains)
-- Stress Regulation: reduction in chronic micro‑stress load 55–70%, HRV coherence improvement 40–60%
-- Sleep & Recovery: circadian drift reduction 25–40%, deep sleep improvement 20–35%
-- Cognitive Function: cognitive fatigue reduction 30–50%, daily clarity improvement 20–35%
-- Mood & Emotional Stability: irritability reduction 25–45%, emotional regulation improvement 30–50%
-- Long‑Term Neural Aging: slowing of neural aging slope 30–50%, stress‑induced damage reduction 60–70%
+---
 
-📊 Overall Weighted Benefit Score
-Total Estimated Benefit: 40–55% improvement in neural load resilience.
+## Effectiveness (Conservative Estimates)
 
-🌐 Real‑World Implication
-The Neural Load Ring doesn’t replace therapy or medication, but it creates a physiological foundation that makes other mental health efforts more effective.
+| Metric | Improvement |
+|--------|-------------|
+| Cognitive aging slope | 30–50% slower decline |
+| Degeneration cascade risk | 25–40% reduction |
+| Stress-induced neural damage | 60–70% reduction |
 
-🧠 Why a Ring?
-- Doesn’t trap sweat
-- Doesn’t move around
-- Doesn’t require tight straps
-- Tiny footprint; comfortable for 24/7 wear
+---
 
-“If it can help even a little, quietly and consistently, then it’s worth bringing into the world.”
+## Mass Adoption
 
-## Hardware Specifications
-```js
-const hardwareSpec = {
-	// Minimum viable hardware (tested):
-	processor: 'ARM Cortex-M4 @ 80MHz',
-	memory: '64KB RAM, 256KB Flash',
-	sensors: 'Single-channel PPG @ 100Hz',
-	battery: '40mAh LiPo (7+ days operation)',
-	connectivity: 'BLE 5.2 for data sync',
-  
-	// Production hardware (recommended):
-	processor: 'ARM Cortex-M33 @ 120MHz',
-	memory: '128KB RAM, 512KB Flash',
-	sensors: 'Dual-channel PPG + temperature',
-	battery: '60mAh LiPo (14+ days operation)',
-	connectivity: 'BLE 5.2 + NFC for pairing',
+People will actually wear this because:
+- Looks like a normal ring
+- Requires no cognitive effort
+- No belief system required
+- No "biohacking" stigma
+- Invisible nervous system insurance
+
+---
+
+## Architecture
+
+```
+neural-load-ring/
+├── core_engine/     # TypeScript HRV analysis (92 tests)
+├── mobile_app/      # React Native companion (30 tests)
+├── firmware/        # nRF52833 C firmware (61 tests)
+└── docs/            # Technical documentation
+```
+
+### Hardware Specifications
+
+```typescript
+const devKit = {
+  processor: 'nRF52833 (Cortex-M4 @ 64MHz)',
+  memory: '128KB RAM, 512KB Flash',
+  sensors: 'Single-channel PPG',
+  battery: '40mAh LiPo (7+ days)',
+  connectivity: 'BLE 5.2 for data sync',
+};
+
+const productionHardware = {
+  processor: 'ARM Cortex-M33 @ 120MHz',
+  memory: '128KB RAM, 512KB Flash',
+  sensors: 'Dual-channel PPG + temperature',
+  battery: '60mAh LiPo (14+ days operation)',
+  connectivity: 'BLE 5.2 + NFC for pairing',
 };
 ```
+
+---
+
+## Getting Started
+
+```bash
+# Clone the repository
+git clone https://github.com/emilianosolazzi/neural-load-ring.git
+cd neural-load-ring
+
+# Core Engine
+cd core_engine && npm install && npm test
+
+# Mobile App
+cd mobile_app && npm install && npm test
+
+# Firmware (requires ARM toolchain)
+cd firmware && mkdir build && cd build && cmake .. && make
+```
+
+---
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development guidelines.
+
+---
+
+## License
+
+MIT License - see [LICENSE](LICENSE) for details.
+
+---
+
+<p align="center">
+  <em>Built with the conviction that freedom and health are non-negotiable.</em>
+</p>
