@@ -5,11 +5,15 @@
  * Handles Bluetooth Low Energy communication with the NLR ring device.
  * Supports RR interval streaming, coherence notifications, and actuator control.
  *
- * Dependencies: react-native-ble-plx (or native bridge)
+ * Dependencies: react-native-ble-plx
  *
  * Copyright (c) 2024-2026 Neural Load Ring Project
  * SPDX-License-Identifier: MIT
  */
+
+import { BleManager, Device, Subscription, State } from 'react-native-ble-plx';
+import { Platform, PermissionsAndroid } from 'react-native';
+import { Buffer } from 'buffer';
 
 /*******************************************************************************
  * GATT SERVICE UUIDs (must match firmware ble_stack.h)
@@ -102,6 +106,14 @@ const connectionListeners = new Set<ConnectionListener>();
 let mockTimer: ReturnType<typeof setInterval> | null = null;
 let connectedDeviceId: string | null = null;
 let isScanning = false;
+
+// BLE manager and device state
+let manager: BleManager | null = null;
+let device: Device | null = null;
+let rrSubscription: Subscription | null = null;
+let coherenceSubscription: Subscription | null = null;
+let stateSubscription: Subscription | null = null;
+let disconnectSubscription: Subscription | null = null;
 
 /*******************************************************************************
  * MOCK IMPLEMENTATION (for development without hardware)
@@ -205,8 +217,90 @@ export function stopMockStream() {
 }
 
 /*******************************************************************************
- * REAL BLE IMPLEMENTATION STUBS
- * Replace with react-native-ble-plx or native module calls
+ * BLE INITIALIZATION AND PERMISSIONS
+ ******************************************************************************/
+
+/**
+ * Initialize the BLE manager
+ * @returns Promise resolving to true when BLE is ready
+ */
+export async function initializeBle(): Promise<boolean> {
+	if (manager) return true;
+
+	manager = new BleManager();
+
+	return new Promise((resolve) => {
+		const subscription = manager!.onStateChange((state) => {
+			console.log('[BLE] State changed:', state);
+			if (state === State.PoweredOn) {
+				subscription.remove();
+				resolve(true);
+			} else if (state === State.PoweredOff || state === State.Unauthorized) {
+				subscription.remove();
+				resolve(false);
+			}
+		}, true);
+
+		// Timeout after 10 seconds
+		setTimeout(() => {
+			subscription.remove();
+			resolve(manager !== null);
+		}, 10000);
+	});
+}
+
+/**
+ * Request BLE permissions (required for Android)
+ * @returns Promise resolving to true if permissions granted
+ */
+export async function requestBlePermissions(): Promise<boolean> {
+	if (Platform.OS === 'ios') {
+		// iOS handles permissions automatically via Info.plist
+		return true;
+	}
+
+	try {
+		if (Platform.Version >= 31) {
+			// Android 12+ requires BLUETOOTH_SCAN and BLUETOOTH_CONNECT
+			const result = await PermissionsAndroid.requestMultiple([
+				PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
+				PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
+			]);
+			const scanGranted = result[PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN] === 'granted';
+			const connectGranted = result[PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT] === 'granted';
+			console.log('[BLE] Android 12+ permissions:', { scanGranted, connectGranted });
+			return scanGranted && connectGranted;
+		} else {
+			// Android 11 and below requires ACCESS_FINE_LOCATION
+			const result = await PermissionsAndroid.request(
+				PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+				{
+					title: 'Location Permission',
+					message: 'Neural Load Ring needs location access to scan for BLE devices.',
+					buttonPositive: 'OK',
+				}
+			);
+			console.log('[BLE] Android location permission:', result);
+			return result === 'granted';
+		}
+	} catch (error) {
+		console.error('[BLE] Permission request failed:', error);
+		return false;
+	}
+}
+
+/**
+ * Destroy BLE manager (cleanup)
+ */
+export function destroyBle(): void {
+	if (manager) {
+		manager.destroy();
+		manager = null;
+	}
+}
+
+/*******************************************************************************
+ * REAL BLE IMPLEMENTATION
  ******************************************************************************/
 
 /**
@@ -216,25 +310,151 @@ export function stopMockStream() {
  */
 export async function scanForDevices(timeoutMs = 10000): Promise<Array<{ id: string; name: string; rssi: number }>> {
 	if (isScanning) return [];
-	isScanning = true;
 
-	// TODO: Replace with actual BLE scanning
-	// const manager = new BleManager();
-	// manager.startDeviceScan([NLR_SERVICE_UUID], null, (error, device) => {
-	//   if (device?.name?.startsWith('NLR-')) {
-	//     // Handle discovered device
-	//   }
-	// });
+	// Request permissions first
+	const hasPermission = await requestBlePermissions();
+	if (!hasPermission) {
+		console.warn('[BLE] Permissions not granted');
+		return [];
+	}
+
+	// Initialize BLE manager
+	const bleReady = await initializeBle();
+	if (!bleReady || !manager) {
+		console.warn('[BLE] BLE not available');
+		// Return mock device for development
+		return [{ id: 'MOCK-NLR-0000', name: 'NLR-0000 (Mock)', rssi: -45 }];
+	}
+
+	isScanning = true;
+	const devices: Array<{ id: string; name: string; rssi: number }> = [];
+	const seenIds = new Set<string>();
 
 	console.log(`[BLE] Scanning for ${timeoutMs}ms...`);
 
 	return new Promise((resolve) => {
-		setTimeout(() => {
+		const timeout = setTimeout(() => {
+			manager!.stopDeviceScan();
 			isScanning = false;
-			// Return mock device for development
-			resolve([{ id: 'MOCK-NLR-0000', name: 'NLR-0000', rssi: -45 }]);
-		}, Math.min(timeoutMs, 2000));
+			console.log(`[BLE] Scan complete. Found ${devices.length} devices.`);
+			// Always include mock device for development
+			if (devices.length === 0) {
+				devices.push({ id: 'MOCK-NLR-0000', name: 'NLR-0000 (Mock)', rssi: -45 });
+			}
+			resolve(devices);
+		}, timeoutMs);
+
+		manager!.startDeviceScan(
+			[NLR_SERVICE_UUID],
+			{ allowDuplicates: false },
+			(error, scannedDevice) => {
+				if (error) {
+					console.warn('[BLE] Scan error:', error.message);
+					return;
+				}
+
+				if (scannedDevice && scannedDevice.name?.startsWith('NLR-')) {
+					if (!seenIds.has(scannedDevice.id)) {
+						seenIds.add(scannedDevice.id);
+						console.log(`[BLE] Found device: ${scannedDevice.name} (${scannedDevice.id})`);
+						devices.push({
+							id: scannedDevice.id,
+							name: scannedDevice.name,
+							rssi: scannedDevice.rssi ?? -100,
+						});
+					}
+				}
+			}
+		);
 	});
+}
+
+/**
+ * Enable BLE notifications for all characteristics
+ */
+async function enableNotifications(): Promise<void> {
+	if (!device) return;
+
+	console.log('[BLE] Enabling notifications...');
+
+	// RR Interval notifications
+	rrSubscription = device.monitorCharacteristicForService(
+		NLR_SERVICE_UUID,
+		NLR_CHARACTERISTICS.RR_INTERVAL,
+		(error, characteristic) => {
+			if (error) {
+				console.warn('[BLE] RR notification error:', error.message);
+				return;
+			}
+			if (!characteristic?.value) return;
+
+			try {
+				const data = Buffer.from(characteristic.value, 'base64');
+				const intervals = parseRRNotification(new Uint8Array(data));
+				intervals.forEach((rr) => emitRR(rr));
+			} catch (e) {
+				console.warn('[BLE] RR parse error:', e);
+			}
+		}
+	);
+
+	// Coherence notifications
+	coherenceSubscription = device.monitorCharacteristicForService(
+		NLR_SERVICE_UUID,
+		NLR_CHARACTERISTICS.COHERENCE,
+		(error, characteristic) => {
+			if (error) {
+				console.warn('[BLE] Coherence notification error:', error.message);
+				return;
+			}
+			if (!characteristic?.value) return;
+
+			try {
+				const data = Buffer.from(characteristic.value, 'base64');
+				const packet = parseCoherenceNotification(new Uint8Array(data));
+				if (packet) emitCoherence(packet);
+			} catch (e) {
+				console.warn('[BLE] Coherence parse error:', e);
+			}
+		}
+	);
+
+	// Device state notifications
+	stateSubscription = device.monitorCharacteristicForService(
+		NLR_SERVICE_UUID,
+		NLR_CHARACTERISTICS.DEVICE_STATE,
+		(error, characteristic) => {
+			if (error) {
+				console.warn('[BLE] State notification error:', error.message);
+				return;
+			}
+			if (!characteristic?.value) return;
+
+			try {
+				const data = Buffer.from(characteristic.value, 'base64');
+				const state = parseDeviceStateNotification(new Uint8Array(data));
+				if (state) emitDeviceState(state);
+			} catch (e) {
+				console.warn('[BLE] State parse error:', e);
+			}
+		}
+	);
+
+	console.log('[BLE] Notifications enabled');
+}
+
+/**
+ * Remove all BLE subscriptions
+ */
+function removeSubscriptions(): void {
+	rrSubscription?.remove();
+	coherenceSubscription?.remove();
+	stateSubscription?.remove();
+	disconnectSubscription?.remove();
+	rrSubscription = null;
+	coherenceSubscription = null;
+	stateSubscription = null;
+	disconnectSubscription = null;
 }
 
 /**
@@ -244,17 +464,53 @@ export async function scanForDevices(timeoutMs = 10000): Promise<Array<{ id: str
 export async function connectToDevice(deviceId: string): Promise<boolean> {
 	console.log(`[BLE] Connecting to ${deviceId}...`);
 
-	// TODO: Replace with actual BLE connection
-	// const device = await manager.connectToDevice(deviceId);
-	// await device.discoverAllServicesAndCharacteristics();
-	// Enable notifications on RR, Coherence, DeviceState characteristics
-
+	// Handle mock device for development
 	if (deviceId.startsWith('MOCK')) {
 		startMockStream();
 		return true;
 	}
 
-	return false;
+	// Initialize BLE if needed
+	if (!manager) {
+		const ready = await initializeBle();
+		if (!ready) {
+			console.error('[BLE] Failed to initialize BLE');
+			return false;
+		}
+	}
+
+	try {
+		// Connect to device with MTU negotiation
+		device = await manager!.connectToDevice(deviceId, {
+			requestMTU: 247,
+			timeout: 10000,
+		});
+
+		console.log('[BLE] Connected, discovering services...');
+		await device.discoverAllServicesAndCharacteristics();
+
+		// Set up disconnect listener
+		disconnectSubscription = manager!.onDeviceDisconnected(deviceId, (error, disconnectedDevice) => {
+			console.log('[BLE] Device disconnected:', disconnectedDevice?.id, error?.message);
+			removeSubscriptions();
+			device = null;
+			connectedDeviceId = null;
+			emitConnection(false);
+		});
+
+		// Enable notifications for all characteristics
+		await enableNotifications();
+
+		connectedDeviceId = deviceId;
+		emitConnection(true, deviceId);
+
+		console.log('[BLE] Connection complete');
+		return true;
+	} catch (error: any) {
+		console.error('[BLE] Connection failed:', error?.message || error);
+		device = null;
+		return false;
+	}
 }
 
 /**
@@ -263,12 +519,28 @@ export async function connectToDevice(deviceId: string): Promise<boolean> {
 export async function disconnect(): Promise<void> {
 	console.log('[BLE] Disconnecting...');
 
+	// Handle mock device
 	if (connectedDeviceId?.startsWith('MOCK')) {
 		stopMockStream();
+		return;
 	}
 
-	// TODO: Replace with actual BLE disconnect
-	// await manager.cancelDeviceConnection(connectedDeviceId);
+	// Remove subscriptions first
+	removeSubscriptions();
+
+	// Disconnect from real device
+	if (device && manager) {
+		try {
+			await manager.cancelDeviceConnection(device.id);
+		} catch (error: any) {
+			// Device may already be disconnected
+			console.warn('[BLE] Disconnect warning:', error?.message);
+		}
+	}
+
+	device = null;
+	connectedDeviceId = null;
+	emitConnection(false);
 }
 
 /**
@@ -282,7 +554,7 @@ export async function sendActuatorCommand(cmd: ActuatorCommand): Promise<boolean
 
 	console.log('[BLE] Sending actuator command:', cmd);
 
-	// Pack command into 4 bytes (little-endian)
+	// Pack command into 4 bytes
 	const data = new Uint8Array([
 		Math.min(100, Math.max(0, cmd.thermalIntensity)),
 		Math.min(255, Math.max(0, cmd.thermalDurationS)),
@@ -290,14 +562,30 @@ export async function sendActuatorCommand(cmd: ActuatorCommand): Promise<boolean
 		Math.min(100, Math.max(0, cmd.vibrationIntensity)),
 	]);
 
-	// TODO: Replace with actual BLE write
-	// await device.writeCharacteristicWithResponseForService(
-	//   NLR_SERVICE_UUID,
-	//   NLR_CHARACTERISTICS.ACTUATOR_CTRL,
-	//   base64.encode(data)
-	// );
+	// Mock device - just log
+	if (connectedDeviceId.startsWith('MOCK')) {
+		console.log('[BLE] Mock actuator command sent');
+		return true;
+	}
 
-	return true;
+	// Real BLE write
+	if (!device) {
+		console.warn('[BLE] Device not available');
+		return false;
+	}
+
+	try {
+		await device.writeCharacteristicWithResponseForService(
+			NLR_SERVICE_UUID,
+			NLR_CHARACTERISTICS.ACTUATOR_CTRL,
+			Buffer.from(data).toString('base64')
+		);
+		console.log('[BLE] Actuator command sent successfully');
+		return true;
+	} catch (error: any) {
+		console.error('[BLE] Actuator write failed:', error?.message || error);
+		return false;
+	}
 }
 
 /**
@@ -306,23 +594,46 @@ export async function sendActuatorCommand(cmd: ActuatorCommand): Promise<boolean
 export async function readConfig(): Promise<RingConfig | null> {
 	if (!connectedDeviceId) return null;
 
-	// TODO: Replace with actual BLE read
-	// const characteristic = await device.readCharacteristicForService(
-	//   NLR_SERVICE_UUID,
-	//   NLR_CHARACTERISTICS.CONFIG
-	// );
-	// Parse 16 bytes into RingConfig
+	// Mock device - return default config
+	if (connectedDeviceId.startsWith('MOCK') || !device) {
+		return {
+			streamingRateHz: 4,
+			coherenceUpdateS: 15,
+			thermalMaxPct: 80,
+			vibrationMaxPct: 100,
+			quietHoursStart: 22,
+			quietHoursEnd: 7,
+			ledBrightness: 50,
+		};
+	}
 
-	// Return mock config
-	return {
-		streamingRateHz: 4,
-		coherenceUpdateS: 15,
-		thermalMaxPct: 80,
-		vibrationMaxPct: 100,
-		quietHoursStart: 22,
-		quietHoursEnd: 7,
-		ledBrightness: 50,
-	};
+	try {
+		const characteristic = await device.readCharacteristicForService(
+			NLR_SERVICE_UUID,
+			NLR_CHARACTERISTICS.CONFIG
+		);
+
+		if (!characteristic?.value) {
+			console.warn('[BLE] No config data received');
+			return null;
+		}
+
+		const data = new Uint8Array(Buffer.from(characteristic.value, 'base64'));
+		console.log('[BLE] Config read:', data);
+
+		return {
+			streamingRateHz: data[0] || 4,
+			coherenceUpdateS: data[1] || 15,
+			thermalMaxPct: data[2] || 80,
+			vibrationMaxPct: data[3] || 100,
+			quietHoursStart: data[4] || 22,
+			quietHoursEnd: data[5] || 7,
+			ledBrightness: data[6] || 50,
+		};
+	} catch (error: any) {
+		console.error('[BLE] Config read failed:', error?.message || error);
+		return null;
+	}
 }
 
 /**
@@ -344,9 +655,24 @@ export async function writeConfig(config: RingConfig): Promise<boolean> {
 	data[6] = Math.min(100, Math.max(0, config.ledBrightness));
 	// bytes 7-15 reserved
 
-	// TODO: Replace with actual BLE write
+	// Mock device - just log
+	if (connectedDeviceId.startsWith('MOCK') || !device) {
+		console.log('[BLE] Mock config write:', config);
+		return true;
+	}
 
-	return true;
+	try {
+		await device.writeCharacteristicWithResponseForService(
+			NLR_SERVICE_UUID,
+			NLR_CHARACTERISTICS.CONFIG,
+			Buffer.from(data).toString('base64')
+		);
+		console.log('[BLE] Config written successfully');
+		return true;
+	} catch (error: any) {
+		console.error('[BLE] Config write failed:', error?.message || error);
+		return false;
+	}
 }
 
 /**
@@ -428,6 +754,11 @@ export const bleService = {
 	// UUIDs
 	SERVICE_UUID: NLR_SERVICE_UUID,
 	CHARACTERISTICS: NLR_CHARACTERISTICS,
+
+	// Initialization
+	initializeBle,
+	requestBlePermissions,
+	destroyBle,
 
 	// Connection
 	scanForDevices,
