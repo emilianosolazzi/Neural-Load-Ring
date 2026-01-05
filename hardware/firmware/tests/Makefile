@@ -34,15 +34,14 @@ TEST_FILES = \
     test_cue_to_signature.c
 
 # Source files (included via #include)
+MOCK_FILES = \
+	mock_drivers.c
+
+# Source files (included via #include in unit_tests.c)
 SRC_FILES = \
-    ../src/wellness_feedback/signature_feel.h \
-    ../src/wellness_feedback/signature_feel.c \
-    ../src/wellness_feedback/cue_processor.h \
-    ../src/wellness_feedback/cue_processor.c \
-    ../src/wellness_feedback/cue_to_signature.h \
-	../src/wellness_feedback/cue_to_signature.c \
-	../src/wellness_feedback/thermal_feature.h \
-	../src/wellness_feedback/thermal_feature.c
+	../src/wellness_feedback/signature_feel.c \
+	../src/wellness_feedback/cue_processor.c \
+	../src/wellness_feedback/cue_to_signature.c
 
 .PHONY: all test clean verbose
 
@@ -55,9 +54,9 @@ all: $(TARGET)
 $(BUILD_DIR):
 	@mkdir -p $(BUILD_DIR)
 
-$(TARGET): $(BUILD_DIR) $(TEST_MAIN) $(TEST_FILES) $(SRC_FILES)
+$(TARGET): $(BUILD_DIR) $(TEST_MAIN) $(TEST_FILES) $(SRC_FILES) $(MOCK_FILES)
 	@echo "Compiling firmware tests..."
-	$(CC) $(CFLAGS) -o $(TARGET) $(TEST_MAIN) $(LDFLAGS)
+	$(CC) $(CFLAGS) -o $(TARGET) $(TEST_MAIN) $(MOCK_FILES) $(LDFLAGS)
 	@echo "Build complete: $(TARGET)"
 
 test: $(TARGET)
