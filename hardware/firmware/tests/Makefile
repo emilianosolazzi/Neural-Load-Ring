@@ -40,7 +40,9 @@ SRC_FILES = \
     ../src/wellness_feedback/cue_processor.h \
     ../src/wellness_feedback/cue_processor.c \
     ../src/wellness_feedback/cue_to_signature.h \
-    ../src/wellness_feedback/cue_to_signature.c
+	../src/wellness_feedback/cue_to_signature.c \
+	../src/wellness_feedback/thermal_feature.h \
+	../src/wellness_feedback/thermal_feature.c
 
 .PHONY: all test clean verbose
 
