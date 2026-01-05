@@ -70,7 +70,10 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
 
       - name: Install dependencies
-        run: rm -f package-lock.json && npm install
+        run: |
+          cd ../../
+          npm install
+          cd software/mobile_app/react_native
 
       - name: Run type checking
         run: npm run type-check
