@@ -106,7 +106,7 @@ jobs:
           zip -r nlr-${VERSION}-docs.zip docs README.md
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           body_path: CHANGELOG.md
           files: |
