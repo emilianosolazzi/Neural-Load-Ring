@@ -78,8 +78,11 @@ jobs:
       - name: Install mobile app dependencies
         run: npm ci
 
+      - name: Debug - List installed packages
+        run: ls node_modules | head -20
+
       - name: Run type checking
-        run: npm run type-check
+        run: npm run type-check 2>&1 || (echo "Type check failed" && exit 1)
 
       - name: Run linting
         run: npm run lint --if-present
