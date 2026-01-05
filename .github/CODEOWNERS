@@ -1,0 +1,26 @@
+# CODEOWNERS - Define code ownership for review requirements
+# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default owner for everything
+* @neural-load-ring/core-team
+
+# Core Engine (HRV algorithms) - requires algorithm expert review
+/software/core_engine/ @neural-load-ring/algorithm-team
+
+# Mobile App - requires mobile dev review
+/software/mobile_app/ @neural-load-ring/mobile-team
+
+# Firmware - requires embedded dev review
+/hardware/firmware/ @neural-load-ring/firmware-team
+
+# Hardware design - requires EE review
+/hardware/schematics/ @neural-load-ring/hardware-team
+/hardware/mechanical/ @neural-load-ring/hardware-team
+
+# Documentation
+/docs/ @neural-load-ring/core-team
+
+# CI/CD and build config
+/.github/ @neural-load-ring/devops-team
+**/package.json @neural-load-ring/devops-team
+**/tsconfig.json @neural-load-ring/devops-team

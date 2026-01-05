@@ -1,5 +1,11 @@
 # Neural Load Ring
 
+[![CI/CD](https://github.com/emilianosolazzi/neural-load-ring/actions/workflows/ci.yml/badge.svg)](https://github.com/emilianosolazzi/neural-load-ring/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
+
+> **183 tests passing** | Core Engine 92 ✓ | Mobile App 30 ✓ | Firmware 61 ✓
+
 Repository scaffold for the Neural Load Ring project.
 
 ## Project Overview

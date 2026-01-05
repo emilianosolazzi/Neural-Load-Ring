@@ -1,0 +1,48 @@
+# Dependabot configuration for automated dependency updates
+# https://docs.github.com/en/code-security/dependabot/dependabot-version-updates
+
+version: 2
+updates:
+  # Core Engine (TypeScript)
+  - package-ecosystem: "npm"
+    directory: "/software/core_engine"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "deps(core):"
+    labels:
+      - "dependencies"
+      - "core-engine"
+
+  # Mobile App (React Native)
+  - package-ecosystem: "npm"
+    directory: "/software/mobile_app/react_native"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "deps(mobile):"
+    labels:
+      - "dependencies"
+      - "mobile-app"
+    ignore:
+      # React Native major versions require manual testing
+      - dependency-name: "react-native"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react"
+        update-types: ["version-update:semver-major"]
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    commit-message:
+      prefix: "ci:"
+    labels:
+      - "dependencies"
+      - "ci"

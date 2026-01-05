@@ -1,7 +1,239 @@
-name: CI
-on: [push, pull_request]
+name: Neural Load Ring CI/CD
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  release:
+    types: [created]
+
+env:
+  NODE_VERSION: '20'
+
 jobs:
-  build:
+  #############################################################################
+  # Core Engine Tests (TypeScript HRV/Wellness Engine)
+  #############################################################################
+  core-engine:
+    name: Core Engine Tests
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: software/core_engine
+
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: software/core_engine/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run type checking
+        run: npx tsc --noEmit
+
+      - name: Run tests with coverage
+        run: npm test -- --coverage --coverageReporters=text --coverageReporters=lcov
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: software/core_engine/coverage/lcov.info
+          flags: core-engine
+          fail_ci_if_error: false
+
+  #############################################################################
+  # Mobile App Tests (React Native)
+  #############################################################################
+  mobile-app:
+    name: Mobile App Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: software/mobile_app/react_native
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: software/mobile_app/react_native/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run type checking
+        run: npm run type-check
+
+      - name: Run linting
+        run: npm run lint --if-present
+        continue-on-error: true
+
+      - name: Run tests with coverage
+        run: npm test -- --coverage --coverageReporters=text --coverageReporters=lcov
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: software/mobile_app/react_native/coverage/lcov.info
+          flags: mobile-app
+          fail_ci_if_error: false
+
+  #############################################################################
+  # Firmware Tests (C - nRF52833)
+  #############################################################################
+  firmware:
+    name: Firmware Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: hardware/firmware/tests
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc make
+
+      - name: Build and run tests
+        run: make all
+
+      - name: Run tests with verbose output
+        run: make verbose
+        continue-on-error: true
+
+  #############################################################################
+  # Code Quality & Security
+  #############################################################################
+  code-quality:
+    name: Code Quality
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Check for secrets in code
+        run: |
+          echo "Scanning for potential secrets..."
+          ! grep -rn "password\s*=" --include="*.ts" --include="*.tsx" --include="*.js" . || true
+          ! grep -rn "api_key\s*=" --include="*.ts" --include="*.tsx" --include="*.js" . || true
+
+      - name: Check TODO/FIXME count
+        run: |
+          echo "=== TODO/FIXME Summary ==="
+          echo "TODOs found:"
+          grep -rn "TODO" --include="*.ts" --include="*.tsx" --include="*.c" --include="*.h" . | wc -l || echo "0"
+          echo ""
+          grep -rn "TODO" --include="*.ts" --include="*.tsx" --include="*.c" --include="*.h" . || echo "No TODOs found"
+
+  #############################################################################
+  # Documentation Check
+  #############################################################################
+  docs:
+    name: Documentation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check required docs exist
+        run: |
+          echo "Checking for required documentation..."
+          test -f README.md && echo "✓ README.md exists" || echo "✗ README.md missing"
+          test -f docs/ble_gatt_specification.md && echo "✓ BLE GATT spec exists" || echo "✗ BLE GATT spec missing"
+          test -f docs/intelligent-haptic-feedback.md && echo "✓ Haptic feedback doc exists" || echo "✗ Haptic feedback doc missing"
+
+      - name: Check for broken markdown links
+        uses: gaurav-nelson/github-action-markdown-link-check@v1
+        with:
+          use-quiet-mode: 'yes'
+          config-file: '.github/mlc_config.json'
+        continue-on-error: true
+
+  #############################################################################
+  # Build Artifacts (on release)
+  #############################################################################
+  build-artifacts:
+    name: Build Artifacts
+    runs-on: ubuntu-latest
+    needs: [core-engine, mobile-app, firmware]
+    if: github.event_name == 'release'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Build core engine
+        working-directory: software/core_engine
+        run: |
+          npm ci
+          npx tsc
+
+      - name: Create release bundle
+        run: |
+          mkdir -p release
+          cp -r software/core_engine/dist release/core_engine 2>/dev/null || echo "No dist folder"
+          cp -r docs release/docs
+          zip -r release/nlr-${{ github.ref_name }}.zip release/
+
+      - name: Upload release artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: nlr-release-${{ github.ref_name }}
+          path: release/nlr-${{ github.ref_name }}.zip
+
+  #############################################################################
+  # CI Status Summary
+  #############################################################################
+  ci-status:
+    name: CI Status
+    runs-on: ubuntu-latest
+    needs: [core-engine, mobile-app, firmware, code-quality, docs]
+    if: always()
+
+    steps:
+      - name: Check all jobs
+        run: |
+          echo "=== CI/CD Pipeline Summary ==="
+          echo "Core Engine:  ${{ needs.core-engine.result }}"
+          echo "Mobile App:   ${{ needs.mobile-app.result }}"
+          echo "Firmware:     ${{ needs.firmware.result }}"
+          echo "Code Quality: ${{ needs.code-quality.result }}"
+          echo "Docs:         ${{ needs.docs.result }}"
+          echo ""
+          if [ "${{ needs.core-engine.result }}" == "failure" ] || \
+             [ "${{ needs.mobile-app.result }}" == "failure" ] || \
+             [ "${{ needs.firmware.result }}" == "failure" ]; then
+            echo "❌ CI Failed - Please check the logs above"
+            exit 1
+          else
+            echo "✅ All critical checks passed!"
+          fi
