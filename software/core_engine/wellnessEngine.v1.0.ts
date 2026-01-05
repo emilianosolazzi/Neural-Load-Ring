@@ -2033,8 +2033,16 @@ export class PerformanceOptimizer {
   
   /**
    * Web Worker implementation for browser/Node.js
+   * Uses 'any' types for cross-platform compatibility (Worker/Blob not available in React Native)
    */
-  static createWorker(): Worker {
+  static createWorker(): unknown {
+    // This method is only available in browser/Node.js environments
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const global = globalThis as any;
+    if (typeof global.Worker === 'undefined' || typeof global.Blob === 'undefined') {
+      throw new Error('createWorker is only available in browser/Node.js environments');
+    }
+    
     const workerCode = `
       self.onmessage = function(e) {
         const { id, method, data } = e.data;
@@ -2061,8 +2069,8 @@ export class PerformanceOptimizer {
       };
     `;
     
-    const blob = new Blob([workerCode], { type: 'application/javascript' });
-    return new Worker(URL.createObjectURL(blob));
+    const blob = new global.Blob([workerCode], { type: 'application/javascript' });
+    return new global.Worker(URL.createObjectURL(blob));
   }
 }
 

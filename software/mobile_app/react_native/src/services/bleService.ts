@@ -83,6 +83,9 @@ export interface RingConfig {
 	quietHoursStart: number; // 0-23
 	quietHoursEnd: number; // 0-23
 	ledBrightness: number; // 0-100
+	firmwareVersion?: string;
+	batteryLevel?: number;
+	autonomousMode?: boolean;
 }
 
 /*******************************************************************************
@@ -260,7 +263,7 @@ export async function requestBlePermissions(): Promise<boolean> {
 	}
 
 	try {
-		if (Platform.Version >= 31) {
+		if (typeof Platform.Version === 'number' && Platform.Version >= 31) {
 			// Android 12+ requires BLUETOOTH_SCAN and BLUETOOTH_CONNECT
 			const result = await PermissionsAndroid.requestMultiple([
 				PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,

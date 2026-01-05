@@ -5,7 +5,7 @@
     "lib": ["ES2020"],
     "jsx": "react-native",
     "module": "ESNext",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
@@ -14,8 +14,7 @@
     "forceConsistentCasingInFileNames": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"],
-      "@core/*": ["../../core_engine/*"]
+      "@/*": ["src/*"]
     }
   },
   "include": [
@@ -27,6 +26,7 @@
     "node_modules",
     "babel.config.js",
     "metro.config.js",
-    "jest.config.js"
+    "jest.config.js",
+    "../../core_engine/**/*"
   ]
 }
