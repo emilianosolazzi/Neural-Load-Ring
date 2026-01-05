@@ -71,20 +71,8 @@ jobs:
           cache: 'npm'
           cache-dependency-path: software/mobile_app/react_native/package-lock.json
 
-      - name: Install core_engine dependencies
-        working-directory: software/core_engine
+      - name: Install dependencies
         run: npm ci
-
-      - name: Install mobile app dependencies
-        run: npm ci
-
-      - name: Run type checking
-        run: npm run type-check
-        continue-on-error: true
-
-      - name: Run linting
-        run: npm run lint --if-present
-        continue-on-error: true
 
       - name: Run tests with coverage
         run: npm test -- --coverage --coverageReporters=text --coverageReporters=lcov
