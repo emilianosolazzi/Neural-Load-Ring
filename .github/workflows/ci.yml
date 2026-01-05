@@ -71,9 +71,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          cd ../../
           npm install
-          cd software/mobile_app/react_native
 
       - name: Run type checking
         run: npm run type-check
