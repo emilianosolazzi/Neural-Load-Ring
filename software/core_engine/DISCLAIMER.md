@@ -1,0 +1,1 @@
+Not medical advice. For wellness features only.

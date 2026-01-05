@@ -1,0 +1,38 @@
+Reference,Value,Footprint,Manufacturer,MPN,Description,Quantity,DNP
+# MCU / Wireless
+U1,nRF52833,QFN-40-5x5mm,Nordic Semiconductor,NRF52833-QIAA-R,ARM Cortex-M4 64MHz BLE 5.2 SoC,1,
+Y1,32MHz,2012-2pin,Abracon,ABM8AIG-32.000MHZ-12-1-T,Crystal 32MHz 12pF 10ppm,1,
+Y2,32.768kHz,1610-2pin,Abracon,ABS07-32.768KHZ-9-T,Crystal 32.768kHz RTC,1,
+# PPG Sensor
+U2,MAX86141,OLGA-14,Analog Devices,MAX86141EWV+T,Dual-channel optical PPG AFE,1,
+D1,SFH7072,0603,ams-OSRAM,SFH7072,Green/Red/IR LED module,1,
+D2,VEMD5060X01,0805,Vishay,VEMD5060X01,Photodiode 940nm,1,
+# Power Management
+U3,BQ25125,DSBGA-15,Texas Instruments,BQ25125YFFR,800mA Li-Ion charger + LDO,1,
+U4,TPS62840,DSBGA-6,Texas Instruments,TPS62840DLCR,60nA IQ buck converter,1,
+BT1,40mAh,Custom,EVE Energy,LP401015,LiPo 3.7V 40mAh,1,
+# Thermal Actuator
+U5,DRV8837,WSON-8,Texas Instruments,DRV8837DSGR,H-bridge driver 1.8A,1,
+R_HTR,10R/0.25W,0402,Yageo,RC0402FR-0710RL,Heater element resistor,1,
+# Vibration Motor
+M1,ERM,3x4mm,Jinlong,G0832001D,Coin vibration motor 3mm,1,
+Q1,Si2301CDS,SOT-23,Vishay,SI2301CDS-T1-GE3,P-ch MOSFET motor driver,1,
+# Passives - Power
+C1,10uF,0402,Murata,GRM155R61A106ME44D,MLCC 10V X5R,2,
+C2,1uF,0201,Murata,GRM033R61C105ME14D,MLCC 16V X5R,4,
+C3,100nF,0201,Murata,GRM033R71C104KE14D,MLCC 16V X7R,6,
+C4,10nF,0201,Murata,GRM033R71H103KE14D,MLCC 50V X7R,2,
+L1,2.2uH,0603,Murata,LQM18FN2R2M00D,Inductor 0.8A DCR 0.15R,1,
+# Passives - Signal
+R1,10k,0201,Yageo,RC0201FR-0710KL,Resistor 1%,4,
+R2,100k,0201,Yageo,RC0201FR-07100KL,Resistor 1%,2,
+R3,4.7k,0201,Yageo,RC0201FR-074K7L,Resistor 1% I2C pull-up,2,
+R4,1M,0201,Yageo,RC0201FR-071ML,Resistor 1% PPG bias,1,
+# ESD / Protection
+D3,PRTR5V0U2X,SOT-143B,Nexperia,PRTR5V0U2X215,ESD protection USB,1,
+F1,200mA,0402,Littelfuse,0402L020SLYR,Resettable fuse,1,
+# Connectors
+J1,USB-C,USB-C-16P,GCT,USB4105-GF-A,USB Type-C receptacle,1,
+J2,SWD,1.27mm-5pin,Tag-Connect,TC2050-IDC-NL,Debug header pads,1,DNP
+# Antenna
+ANT1,2.4GHz,Chip,Johanson,2450AT18A100E,Chip antenna BLE,1,

@@ -1,0 +1,63 @@
+{
+  "$schema": "./schema.json",
+  "environment": "development",
+  
+  "ble": {
+    "mockMode": true,
+    "mockHRInterval": 850,
+    "autoConnect": true,
+    "reconnectAttempts": 3,
+    "connectionTimeout": 5000
+  },
+  
+  "engine": {
+    "debugLogging": true,
+    "minSamples": 30,
+    "windowSeconds": 120,
+    "processingInterval": 2000
+  },
+  
+  "haptics": {
+    "enabled": true,
+    "autoSendCues": true,
+    "debugMode": true,
+    "preferences": {
+      "enabled": true,
+      "maxThermalIntensity": 80,
+      "maxVibrationIntensity": 80,
+      "quietHoursStart": 22,
+      "quietHoursEnd": 7,
+      "sensitivityMode": "normal",
+      "breathingGuidanceEnabled": true,
+      "thermalEnabled": true,
+      "vibrationEnabled": true
+    }
+  },
+  
+  "firmware": {
+    "testMode": true,
+    "runTestsOnBuild": true,
+    "verboseOutput": true
+  },
+  
+  "api": {
+    "baseUrl": "http://localhost:3000",
+    "timeout": 10000,
+    "retryAttempts": 2
+  },
+  
+  "logging": {
+    "level": "debug",
+    "enableConsole": true,
+    "enableFile": false,
+    "logFilePath": "./logs/dev.log"
+  },
+  
+  "features": {
+    "intelligentFeedback": true,
+    "signatureFeel": true,
+    "adaptiveCues": true,
+    "respiratoryDetection": true,
+    "trendAnalysis": true
+  }
+}

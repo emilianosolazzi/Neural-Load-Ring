@@ -1,0 +1,215 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Neural Load Ring Configuration",
+  "description": "Configuration schema for Neural Load Ring application",
+  "type": "object",
+  "properties": {
+    "environment": {
+      "type": "string",
+      "enum": ["development", "staging", "production"],
+      "description": "Runtime environment"
+    },
+    "ble": {
+      "type": "object",
+      "properties": {
+        "mockMode": {
+          "type": "boolean",
+          "description": "Use mock BLE data instead of real device"
+        },
+        "mockHRInterval": {
+          "type": "number",
+          "description": "Mock RR interval in milliseconds",
+          "minimum": 300,
+          "maximum": 2000
+        },
+        "autoConnect": {
+          "type": "boolean",
+          "description": "Automatically connect to last known device"
+        },
+        "reconnectAttempts": {
+          "type": "integer",
+          "description": "Number of reconnection attempts",
+          "minimum": 0,
+          "maximum": 10
+        },
+        "connectionTimeout": {
+          "type": "integer",
+          "description": "Connection timeout in milliseconds",
+          "minimum": 1000,
+          "maximum": 30000
+        }
+      }
+    },
+    "engine": {
+      "type": "object",
+      "properties": {
+        "debugLogging": {
+          "type": "boolean",
+          "description": "Enable debug logging for HRV engine"
+        },
+        "minSamples": {
+          "type": "integer",
+          "description": "Minimum RR samples before processing",
+          "minimum": 10,
+          "maximum": 100
+        },
+        "windowSeconds": {
+          "type": "integer",
+          "description": "Analysis window duration in seconds",
+          "minimum": 30,
+          "maximum": 300
+        },
+        "processingInterval": {
+          "type": "integer",
+          "description": "Processing interval in milliseconds",
+          "minimum": 500,
+          "maximum": 10000
+        }
+      }
+    },
+    "haptics": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Master switch for haptic feedback"
+        },
+        "autoSendCues": {
+          "type": "boolean",
+          "description": "Automatically send cues to ring"
+        },
+        "debugMode": {
+          "type": "boolean",
+          "description": "Enable haptic debug logging"
+        },
+        "preferences": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "maxThermalIntensity": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100
+            },
+            "maxVibrationIntensity": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100
+            },
+            "quietHoursStart": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 23
+            },
+            "quietHoursEnd": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 23
+            },
+            "sensitivityMode": {
+              "type": "string",
+              "enum": ["subtle", "normal", "assertive"]
+            },
+            "breathingGuidanceEnabled": {
+              "type": "boolean"
+            },
+            "thermalEnabled": {
+              "type": "boolean"
+            },
+            "vibrationEnabled": {
+              "type": "boolean"
+            }
+          }
+        }
+      }
+    },
+    "firmware": {
+      "type": "object",
+      "properties": {
+        "testMode": {
+          "type": "boolean",
+          "description": "Enable firmware test mode"
+        },
+        "runTestsOnBuild": {
+          "type": "boolean",
+          "description": "Run unit tests during build"
+        },
+        "verboseOutput": {
+          "type": "boolean",
+          "description": "Enable verbose build output"
+        }
+      }
+    },
+    "api": {
+      "type": "object",
+      "properties": {
+        "baseUrl": {
+          "type": "string",
+          "format": "uri",
+          "description": "API base URL"
+        },
+        "timeout": {
+          "type": "integer",
+          "description": "Request timeout in milliseconds",
+          "minimum": 1000,
+          "maximum": 60000
+        },
+        "retryAttempts": {
+          "type": "integer",
+          "description": "Number of retry attempts",
+          "minimum": 0,
+          "maximum": 5
+        }
+      }
+    },
+    "logging": {
+      "type": "object",
+      "properties": {
+        "level": {
+          "type": "string",
+          "enum": ["debug", "info", "warn", "error"],
+          "description": "Logging level"
+        },
+        "enableConsole": {
+          "type": "boolean",
+          "description": "Enable console logging"
+        },
+        "enableFile": {
+          "type": "boolean",
+          "description": "Enable file logging"
+        },
+        "logFilePath": {
+          "type": "string",
+          "description": "Path to log file"
+        }
+      }
+    },
+    "features": {
+      "type": "object",
+      "properties": {
+        "intelligentFeedback": {
+          "type": "boolean",
+          "description": "Enable intelligent haptic feedback system"
+        },
+        "signatureFeel": {
+          "type": "boolean",
+          "description": "Enable signature feel patterns"
+        },
+        "adaptiveCues": {
+          "type": "boolean",
+          "description": "Enable adaptive cue timing"
+        },
+        "respiratoryDetection": {
+          "type": "boolean",
+          "description": "Enable respiratory rate detection"
+        },
+        "trendAnalysis": {
+          "type": "boolean",
+          "description": "Enable trend analysis"
+        }
+      }
+    }
+  }
+}
