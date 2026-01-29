@@ -10,9 +10,15 @@
 #define MAX_RR_MS           2000.0f
 #define MAX_RR_CHANGE_ALPHA 0.20f  /* 20% max beat-to-beat change */
 
+#define BASELINE_ALPHA      0.005f /* Slow adaptation for baseline (approx 200 samples to shift significantly) */
+#define MIN_BASELINE_SAMPLES 60    /* Require ~1 min of data before trusting baseline */
+#define DEFAULT_BASELINE_RMSSD 40.0f /* Fallback starting point */
+
 void biometrics_reset(hr_metrics_t *p_metrics) {
     if (p_metrics) {
         memset(p_metrics, 0, sizeof(hr_metrics_t));
+        p_metrics->baseline_rmssd = DEFAULT_BASELINE_RMSSD;
+        p_metrics->baseline_established = false;
     }
 }
 
@@ -56,24 +62,45 @@ bool biometrics_process_rr(hr_metrics_t *p_metrics, float rr_ms) {
         p_metrics->mean_rr_ms = (alpha_mean * rr_ms) + ((1.0f - alpha_mean) * p_metrics->mean_rr_ms);
     }
 
-    /* Update stress score (Simplified: lower RMSSD relative to baseline = higher stress) */
+    /* 4. Adaptive Baseline and Personalized Stress Scoring */
     if (p_metrics->rmssd > 0) {
-        /* Goal: Map 10ms-100ms RMSSD to 1.0-0.0 stress score.
-           We use a more robust sigmoid or linear mapping. */
-        float stress;
-        if (p_metrics->rmssd < 10.0f) {
-            stress = 1.0f;
-        } else if (p_metrics->rmssd > 100.0f) {
-            stress = 0.0f;
-        } else {
-            stress = (100.0f - p_metrics->rmssd) / 90.0f;
+        /* Update baseline: Only update if strictly valid and we are somewhat stable.
+           We use a very slow moving average to learn the user's "normal". */
+        if (p_metrics->valid_samples > 10) {
+            p_metrics->baseline_rmssd = (BASELINE_ALPHA * p_metrics->rmssd) + ((1.0f - BASELINE_ALPHA) * p_metrics->baseline_rmssd);
         }
         
-        /* Apply some smoothing to the stress score itself */
-        if (p_metrics->valid_samples == 1) {
-            p_metrics->stress_score = stress;
+        if (p_metrics->valid_samples > MIN_BASELINE_SAMPLES) {
+            p_metrics->baseline_established = true;
+        }
+
+        /* Calculate Stress Score relative to PERSONALIZED baseline */
+        /* If RMSSD is at baseline, stress is 0.3 (relaxed alert). 
+           If RMSSD is 50% of baseline, stress is high (0.8).
+           If RMSSD is 150% of baseline, stress is low (0.0). */
+           
+        float ratio = p_metrics->rmssd / p_metrics->baseline_rmssd;
+        float stress_raw;
+        
+        /* Sigmoid-like mapping tailored for HRV */
+        if (ratio >= 1.5f) {
+            stress_raw = 0.0f; /* Very relaxed / recovery */
+        } else if (ratio <= 0.5f) {
+            stress_raw = 1.0f; /* High acute stress */
         } else {
-            p_metrics->stress_score = (0.2f * stress) + (0.8f * p_metrics->stress_score);
+            /* Linear interpolation between 0.5 (1.0 stress) and 1.5 (0.0 stress) */
+            stress_raw = 1.0f - (ratio - 0.5f); 
+        }
+
+        /* Clamp */
+        if (stress_raw < 0.0f) stress_raw = 0.0f;
+        if (stress_raw > 1.0f) stress_raw = 1.0f;
+        
+        /* Smooth the output score */
+        if (p_metrics->valid_samples == 1) {
+            p_metrics->stress_score = stress_raw;
+        } else {
+            p_metrics->stress_score = (0.2f * stress_raw) + (0.8f * p_metrics->stress_score);
         }
     }
 

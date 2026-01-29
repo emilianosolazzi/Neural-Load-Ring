@@ -14,6 +14,10 @@ typedef struct {
     float last_rr_ms;
     float mean_diff_sq;       /**< Internal state for incremental RMSSD */
     uint32_t total_samples;   /**< Total samples seen (including artifacts) */
+    
+    /* Adaptive Baseline Tracking */
+    float baseline_rmssd;     /**< Long-term average RMSSD (User Normal) */
+    bool baseline_established;/**< True if enough data collected to trust baseline */
 } hr_metrics_t;
 
 void biometrics_reset(hr_metrics_t *p_metrics);

@@ -32,6 +32,13 @@ void wellness_manager_tick(uint32_t now_ms);
 void wellness_manager_set_autonomous(bool enabled);
 
 /**
+ * @brief Update the system battery level for power-aware processing
+ * 
+ * @param level_pct Battery level 0-100
+ */
+void wellness_manager_set_battery(uint8_t level_pct);
+
+/**
  * @brief Get latest computed metrics
  */
 const hr_metrics_t* wellness_manager_get_metrics(void);

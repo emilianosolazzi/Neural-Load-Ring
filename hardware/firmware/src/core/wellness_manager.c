@@ -15,6 +15,9 @@ static struct {
     uint8_t rr_head;
     uint8_t rr_tail;
     uint8_t rr_count;
+    
+    /* Power Management */
+    uint8_t battery_pct;
 } s_manager;
 
 void wellness_manager_init(void) {
@@ -24,6 +27,7 @@ void wellness_manager_init(void) {
     s_manager.rr_head = 0;
     s_manager.rr_tail = 0;
     s_manager.rr_count = 0;
+    s_manager.battery_pct = 100; /* Assume full until told otherwise */
 }
 
 void wellness_manager_tick(uint32_t now_ms) {
@@ -66,6 +70,18 @@ void wellness_manager_tick(uint32_t now_ms) {
             
             cue_output_t cue_out;
             if (cue_processor_generate(&cue_in, &cue_out)) {
+                
+                /* POWER SAVING: Disable thermal cues if battery is critically low (<15%) */
+                if (s_manager.battery_pct < 15 && cue_out.thermal_intensity > 0) {
+                    /* Convert thermal intent to subtle vibration if possible, or just suppress */
+                    if (cue_out.vib_intensity == 0) {
+                        /* Create fallback vibration "low battery nudge" */
+                        cue_out.vib_pattern = 1; /* GROUNDING_PULSE */
+                        cue_out.vib_intensity = 20;
+                    }
+                    cue_out.thermal_intensity = 0; /* Kill thermal */
+                }
+
                 /* Apply the generated cue to the actuators */
                 actuator_apply_ble(
                     cue_out.thermal_intensity,
@@ -81,6 +97,10 @@ void wellness_manager_tick(uint32_t now_ms) {
 
 void wellness_manager_set_autonomous(bool enabled) {
     s_manager.autonomous_enabled = enabled;
+}
+
+void wellness_manager_set_battery(uint8_t level_pct) {
+    s_manager.battery_pct = level_pct;
 }
 
 const hr_metrics_t* wellness_manager_get_metrics(void) {
