@@ -37,16 +37,19 @@ void mocks_reset(void)
 #include "../src/wellness_feedback/signature_feel.c"
 #include "../src/wellness_feedback/cue_processor.c"
 #include "../src/wellness_feedback/cue_to_signature.c"
+#include "../src/core/biometric_algorithms.c"
 
 /* Test suites */
 extern void run_signature_feel_tests(void);
 extern void run_cue_processor_tests(void);
 extern void run_cue_to_signature_tests(void);
+extern void run_biometric_tests(void);
 
 /* Include test implementations */
 #include "test_signature_feel.c"
 #include "test_cue_processor.c"
 #include "test_cue_to_signature.c"
+#include "test_biometrics.c"
 
 /*******************************************************************************
  * MAIN
@@ -67,6 +70,7 @@ int main(void)
     run_signature_feel_tests();
     run_cue_processor_tests();
     run_cue_to_signature_tests();
+    run_biometric_tests();
     
     /* Print summary */
     test_print_summary();

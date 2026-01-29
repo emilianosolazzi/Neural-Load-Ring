@@ -19,6 +19,7 @@
 #include "../sensors/ppg_driver.h"
 #include "../sensors/temperature_sensor.h"
 #include "../core/wellness_processor.h"
+#include "../core/wellness_manager.h"
 #include "../wellness_feedback/actuator_controller.h"
 #include "../wellness_feedback/thermal_feature.h"
 #include "../wellness_feedback/vibration_feature.h"
@@ -111,13 +112,10 @@ static void on_ble_event(const nlr_ble_evt_t *p_evt)
 static void task_collect_rr(void)
 {
     float rr_ms;
-    while (ppg_get_rr(&rr_ms) > 0) {
+    while (wellness_manager_pop_rr(&rr_ms)) {
         if (m_app.rr_count < RR_BUFFER_SIZE) {
-            /* Clamp and store */
-            uint16_t rr_u16 = (uint16_t)rr_ms;
-            if (rr_u16 >= 200 && rr_u16 <= 2500) {
-                m_app.rr_buffer[m_app.rr_count++] = rr_u16;
-            }
+            /* Store as u16 for BLE characteristic */
+            m_app.rr_buffer[m_app.rr_count++] = (uint16_t)rr_ms;
         }
     }
 }
@@ -154,15 +152,16 @@ static void task_send_coherence(uint32_t now_ms)
     if ((now_ms - m_app.last_coherence_ms) >= COHERENCE_UPDATE_MS) {
         m_app.last_coherence_ms = now_ms;
         
-        /* TODO: Get actual metrics from wellness processor */
+        const hr_metrics_t *p_metrics = wellness_manager_get_metrics();
+        
         nlr_coherence_packet_t packet = {
-            .stress_level = 35,
-            .coherence_pct = 70,
-            .confidence_pct = 85,
-            .variability_level = 60,
-            .mean_rr_ms = 820,
-            .rmssd_ms = 42,
-            .respiratory_rate_cpm = 150,  /* 15.0 breaths/min */
+            .stress_level = (uint8_t)(p_metrics->stress_score * 100.0f),
+            .coherence_pct = (uint8_t)((1.0f - p_metrics->stress_score) * 100.0f),
+            .confidence_pct = (p_metrics->valid_samples > 30) ? 90 : 50,
+            .variability_level = (uint8_t)(p_metrics->rmssd > 100 ? 100 : p_metrics->rmssd),
+            .mean_rr_ms = (uint16_t)p_metrics->mean_rr_ms,
+            .rmssd_ms = (uint16_t)p_metrics->rmssd,
+            .respiratory_rate_cpm = 0, /* TODO: Implement resp rate detection */
             .reserved = 0,
         };
         
@@ -226,6 +225,9 @@ int main(void)
     ppg_init();
     temperature_init();
     
+    /* Initialize wellness core */
+    wellness_manager_init();
+    
     /* Initialize actuators */
     actuator_init();
     
@@ -238,6 +240,9 @@ int main(void)
     while (1) {
         /* Process BLE events */
         nlr_ble_process();
+        
+        /* Run wellness analysis */
+        wellness_manager_tick(now_ms);
         
         /* Run periodic tasks */
         task_collect_rr();
